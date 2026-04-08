@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.widgets import Slider, RadioButtons
+from matplotlib.colors import LightSource
 from scipy.special import jv # Bessel function for circular patterns
 from scipy.ndimage import gaussian_filter
 
@@ -18,8 +19,12 @@ FLUIDS = {
 INITIAL_SHAPE = 'circle'
 INITIAL_FREQ = 50.0        # Initial sound frequency in Hz
 INITIAL_FLUID = 'Water'
+INITIAL_STYLE = 'Magma'
 RESOLUTION = 80           # Grid density (reduced for 3D performance)
 ANIMATION_SPEED = 0.5
+
+# --- Light Source ---
+ls = LightSource(azdeg=315, altdeg=45)
 
 # Create the Coordinate System
 x = np.linspace(-1, 1, RESOLUTION)
@@ -64,7 +69,10 @@ plt.subplots_adjust(left=0.3, bottom=0.35) # Make room for UI
 
 # Use the modified get_z signature
 Z_init = get_z(0, INITIAL_SHAPE, INITIAL_FREQ, INITIAL_FLUID)
-surf = ax.plot_surface(X, Y, Z_init, cmap='magma', rstride=2, cstride=2, antialiased=False)
+if INITIAL_STYLE == 'B&W Shadows':
+    surf = ax.plot_surface(X, Y, Z_init, cmap='gray', lightsource=ls, rstride=2, cstride=2, antialiased=False)
+else:
+    surf = ax.plot_surface(X, Y, Z_init, cmap='magma', rstride=2, cstride=2, antialiased=False)
 ax.axis('off')
 ax.set_zlim(-1.5, 1.5)
 ax.view_init(elev=45, azim=45)
@@ -86,6 +94,11 @@ ax_fluid = plt.axes([0.05, 0.5, 0.15, 0.25], facecolor='lightgoldenrodyellow')
 fluid_radio = RadioButtons(ax_fluid, list(FLUIDS.keys()), 
                            active=list(FLUIDS.keys()).index(INITIAL_FLUID))
 
+# Style Radio Buttons
+ax_style = plt.axes([0.05, 0.8, 0.15, 0.15], facecolor='lightgoldenrodyellow')
+style_radio = RadioButtons(ax_style, ['Magma', 'B&W Shadows'], 
+                           active=0 if INITIAL_STYLE == 'Magma' else 1)
+
 # Container Shape Radio Buttons
 ax_shape = plt.axes([0.05, 0.2, 0.15, 0.15], facecolor='lightgoldenrodyellow')
 shape_radio = RadioButtons(ax_shape, ['circle', 'square'], 
@@ -103,6 +116,7 @@ def update(frame):
     current_freq = slider_freq.val
     current_fluid = fluid_radio.value_selected
     current_shape = shape_radio.value_selected
+    current_style = style_radio.value_selected
     
     # Generate new frame
     new_z = get_z(t, current_shape, current_freq, current_fluid)
@@ -115,7 +129,10 @@ def update(frame):
     azim = ax.azim
     
     surf.remove()
-    surf = ax.plot_surface(X, Y, new_z, cmap='magma', rstride=2, cstride=2, antialiased=False)
+    if current_style == 'B&W Shadows':
+        surf = ax.plot_surface(X, Y, new_z, cmap='gray', lightsource=ls, rstride=2, cstride=2, antialiased=False)
+    else:
+        surf = ax.plot_surface(X, Y, new_z, cmap='magma', rstride=2, cstride=2, antialiased=False)
     
     # Restore view limits
     ax.set_xlim(xlim)
